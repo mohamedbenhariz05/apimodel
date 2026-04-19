@@ -4,12 +4,12 @@ FROM python:3.11-slim AS builder
 WORKDIR /install
 
 COPY requirements.txt .
-RUN pip install --upgrade pip && \
-    pip install --prefix=/install/deps --no-cache-dir \
+RUN pip install --upgrade pip --root-user-action=ignore && \
+    pip install --prefix=/install/deps --no-cache-dir --root-user-action=ignore \
         flask==3.0.0 \
         gunicorn==22.0.0 \
         pillow==10.4.0 && \
-    pip install --prefix=/install/deps --no-cache-dir \
+    pip install --prefix=/install/deps --no-cache-dir --root-user-action=ignore \
         torch==2.3.1+cpu \
         torchvision==0.18.1+cpu \
         --index-url https://download.pytorch.org/whl/cpu
@@ -40,10 +40,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"
 
 # 2 workers × 2 threads — tune to your CPU core count
-CMD ["gunicorn", "app:app", \
-     "--workers", "2", \
-     "--threads", "2", \
-     "--bind", "0.0.0.0:5000", \
-     "--timeout", "60", \
-     "--access-logfile", "-", \
-     "--error-logfile", "-"]
+CMD ["sh", "-c", "gunicorn app:app --workers 2 --threads 2 --bind 0.0.0.0:${PORT:-5000} --timeout 60 --access-logfile - --error-logfile -"]
