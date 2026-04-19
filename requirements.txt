@@ -1,4 +1,4 @@
 flask==3.0.0
-torch==2.5.1
+torch==2.6.0
 torchvision==0.21.0
 pillow==10.4.0
