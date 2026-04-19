@@ -23,26 +23,10 @@ CLASSES = [
     "palm_parlatoria_blanchardi", "palm_potassium_deficiency", "palm_rachis_blight"
 ]
 
-# Mapping for AI Agent prompts to provide better context
-CLASSES_AR = [
-    "زيتون — أكاروس الزيتون (Aculus olearius)",
-    "زيتون — سليم وممتاز (Healthy)",
-    "زيتون — مرض عين الطاووس (Peacock spot)",
-    "نخيل — اللفحة السوداء (Black scorch)",
-    "نخيل — مرض البيّوض (Fusarium wilt)",
-    "نخيل — سليم وممتاز (Healthy)",
-    "نخيل — تبقع الأوراق (Leaf spots)",
-    "نخيل — نقص المغنيسيوم (Magnesium def)",
-    "نخيل — نقص المنجنيز (Manganese def)",
-    "نخيل — الحشرة القشرية البيضاء (Parlatoria)",
-    "نخيل — نقص البوتاسيوم (Potassium def)",
-    "نخيل — لفحة الجريد (Rachis blight)"
-]
-
 CONFIDENCE_THRESHOLD = 0.60
 MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10 MB
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(os.path.dirname(BASE_DIR), "models", "student_best.pth")
+MODEL_PATH = os.path.join(BASE_DIR, "student_best.pth")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # =======================
@@ -70,37 +54,6 @@ transform = transforms.Compose([
 ])
 
 # =======================
-# AI AGENT
-# =======================
-
-def get_ai_advice(class_idx: int) -> str:
-    """Gets agricultural advice from the AI agent in Tunisian Arabic."""
-    disease_desc = CLASSES_AR[class_idx]
-    
-    # If healthy, no need for disease details
-    if "سليم" in disease_desc or "Healthy" in disease_desc:
-        return f"النموذج يقول أن النبتة: {disease_desc}. تبدو بحالة ممتازة! ما تستحقش دواء."
-    
-    try:
-        from g4f.client import Client
-        client = Client()
-        prompt = (
-            f"You are an expert agricultural AI in Tunisia. The user has uploaded an image of a plant leaf "
-            f"and our computer vision model diagnosed it as: '{disease_desc}'. "
-            f"Please provide detailed information about this disease, including its causes, symptoms, "
-            f"and recommend treatment or prevention methods. Be clear, practical, and concise. "
-            f"IMPORTANT: You must provide your complete response in Tunisian Arabic dialect (الدارجة التونسية)."
-        )
-        
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"An error occurred while contacting the AI Agent: {str(e)}"
-
-# =======================
 # PREDICTION
 # =======================
 
@@ -116,9 +69,6 @@ def predict(image: Image.Image) -> dict:
     if top_prob < CONFIDENCE_THRESHOLD:
         return {"valid": False, "message": "Not a leaf or confidence too low"}
 
-    # Get AI advice
-    ai_advice = get_ai_advice(top_idx)
-
     top3 = sorted(
         [{"class": CLASSES[i], "prob": round(float(probs[i]), 4)} for i in range(len(CLASSES))],
         key=lambda x: x["prob"], reverse=True
@@ -129,7 +79,6 @@ def predict(image: Image.Image) -> dict:
         "disease": CLASSES[top_idx],
         "confidence": round(top_prob * 100, 2),
         "top3": top3,
-        "ai_advice": ai_advice
     }
 
 # =======================
