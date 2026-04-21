@@ -24,7 +24,7 @@ CLASSES = [
 ]
 
 CONFIDENCE_THRESHOLD = 0.60
-MAX_IMAGE_BYTES = 40 * 1024 * 1024  # 10 MB
+MAX_IMAGE_BYTES = 4000 * 1024 * 1024  # 4000 MB
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "student_best.pth")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
